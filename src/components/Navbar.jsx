@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Flame, ShoppingBag, Menu as MenuIcon, X, Volume2, VolumeX, MapPin, PhoneCall } from 'lucide-react';
-import { toggleBBQSizzle, getSizzleState } from '../utils/audio';
+import { Flame, ShoppingBag, Menu as MenuIcon, X, Volume2, VolumeX, Music } from 'lucide-react';
+import { toggleMelodyBGM, getMelodyState } from '../utils/audio';
 
 export default function Navbar({ cartCount, onOpenCart, onOpenFranchiseModal }) {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -25,7 +25,7 @@ export default function Navbar({ cartCount, onOpenCart, onOpenFranchiseModal }) 
   }, [isMobileMenuOpen]);
 
   const handleSoundClick = () => {
-    const state = toggleBBQSizzle();
+    const state = toggleMelodyBGM();
     setIsAudioPlaying(state);
   };
 
@@ -102,25 +102,35 @@ export default function Navbar({ cartCount, onOpenCart, onOpenFranchiseModal }) 
 
         {/* Actions (Audio + Cart + Order CTA + Mobile Menu Button) */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {/* Sizzle Audio Synthesizer Toggle */}
+          {/* Melody BGM Synthesizer Toggle */}
           <button
             onClick={handleSoundClick}
-            className={`p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-semibold backdrop-blur-md border transition-all flex items-center gap-1.5 ${
+            className={`p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-semibold backdrop-blur-md border transition-all flex items-center gap-1.5 cursor-pointer ${
               isAudioPlaying
-                ? 'bg-orange-500/20 border-orange-500 text-orange-400 animate-pulse'
+                ? 'bg-gradient-to-r from-orange-500/30 to-amber-500/20 border-orange-500 text-orange-300 shadow-[0_0_15px_rgba(255,80,0,0.4)] animate-pulse'
                 : 'bg-white/5 border-white/10 text-zinc-400 hover:text-white hover:border-white/20'
             }`}
-            title="Toggle Live Coal Sizzle Audio"
-            aria-label="Toggle Sizzle Audio"
+            title="Toggle Relaxing Melody BGM"
+            aria-label="Toggle Melody BGM"
           >
-            {isAudioPlaying ? <Volume2 className="w-4 h-4 text-orange-400" /> : <VolumeX className="w-4 h-4" />}
-            <span className="hidden md:inline">{isAudioPlaying ? 'Sizzle ON' : 'Audio'}</span>
+            {isAudioPlaying ? (
+              <>
+                <Music className="w-3.5 h-3.5 text-yellow-300 animate-bounce" />
+                <Volume2 className="w-4 h-4 text-orange-400" />
+              </>
+            ) : (
+              <>
+                <Music className="w-3.5 h-3.5 text-zinc-400" />
+                <VolumeX className="w-4 h-4" />
+              </>
+            )}
+            <span className="hidden md:inline">{isAudioPlaying ? 'Melody BGM ON 🎶' : 'Melody BGM'}</span>
           </button>
 
           {/* Cart Drawer Trigger */}
           <button
             onClick={onOpenCart}
-            className="relative p-2 sm:p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-200 hover:text-white transition-colors"
+            className="relative p-2 sm:p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-200 hover:text-white transition-colors cursor-pointer"
             title="View Order Cart"
             aria-label="Shopping Cart"
           >
@@ -145,7 +155,7 @@ export default function Navbar({ cartCount, onOpenCart, onOpenFranchiseModal }) 
           {/* Mobile Hamburger Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden p-2 rounded-xl bg-white/5 border border-white/10 text-zinc-300 hover:text-white focus:outline-none"
+            className="lg:hidden p-2 rounded-xl bg-white/5 border border-white/10 text-zinc-300 hover:text-white focus:outline-none cursor-pointer"
             aria-label="Open Navigation Menu"
           >
             {isMobileMenuOpen ? <X className="w-5 h-5 text-orange-400" /> : <MenuIcon className="w-5 h-5" />}
@@ -185,10 +195,19 @@ export default function Navbar({ cartCount, onOpenCart, onOpenFranchiseModal }) 
 
             <button
               onClick={handleSoundClick}
-              className="w-full py-3 rounded-2xl bg-white/5 border border-white/10 text-zinc-300 font-semibold flex items-center justify-center gap-2 text-xs"
+              className="w-full py-3 rounded-2xl bg-white/5 border border-white/10 text-zinc-300 font-semibold flex items-center justify-center gap-2 text-xs cursor-pointer"
             >
-              {isAudioPlaying ? <Volume2 className="w-4 h-4 text-orange-400" /> : <VolumeX className="w-4 h-4" />}
-              <span>{isAudioPlaying ? 'Live Sizzle Audio: Playing' : 'Enable Live Charcoal Sizzle Audio'}</span>
+              {isAudioPlaying ? (
+                <>
+                  <Music className="w-4 h-4 text-yellow-300 animate-bounce" />
+                  <span>Melody BGM: Playing 🎶</span>
+                </>
+              ) : (
+                <>
+                  <Volume2 className="w-4 h-4 text-orange-400" />
+                  <span>🎵 Play Smokehouse Melody BGM</span>
+                </>
+              )}
             </button>
           </div>
         </div>

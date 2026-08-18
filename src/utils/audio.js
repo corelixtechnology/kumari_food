@@ -1,151 +1,216 @@
-// Synthetic Web Audio API BBQ Sizzle & Charcoal Crackle Sound Generator
-// No external mp3 files needed - 100% reliable, zero-latency, realistic!
+// Melodic Ambient Background Music (BGM) Generator using Web Audio API
+// High quality, warm chill-out restaurant melody with polyphonic chord progressions & soothing plucks.
+// No large external MP3 download needed - 100% reliable, zero network latency, beautifully looped!
 
 let audioCtx = null;
-let sizzleGainNode = null;
-let crackleGainNode = null;
+let masterGainNode = null;
 let isPlaying = false;
-let crackleInterval = null;
+let sequenceTimer = null;
+let currentStep = 0;
+
+// Chord progression: Em9 -> Cmaj7 -> Gmaj7 -> Dsus4/B (Warm chill smokehouse acoustic vibe)
+const CHORD_PROGRESSION = [
+  { bass: 82.41, notes: [164.81, 196.00, 246.94, 293.66, 392.00] }, // E3, G3, B3, D4, G4 (Em9)
+  { bass: 65.41, notes: [130.81, 164.81, 196.00, 246.94, 329.63] }, // C3, E3, G3, B3, E4 (Cmaj7)
+  { bass: 98.00, notes: [146.83, 196.00, 246.94, 293.66, 369.99] }, // D3, G3, B3, D4, F#4 (Gmaj7)
+  { bass: 73.42, notes: [146.83, 220.00, 246.94, 293.66, 440.00] }, // D3, A3, B3, D4, A4 (Dsus4)
+];
+
+// Pentatonic melodic lead notes (Hz)
+const MELODY_NOTES = [
+  329.63, 369.99, 392.00, 440.00, 493.88, 587.33, 659.25, 739.99, 783.99
+];
 
 export const toggleBBQSizzle = (forceState) => {
+  return toggleMelodyBGM(forceState);
+};
+
+export const toggleMelodyBGM = (forceState) => {
   if (forceState !== undefined) {
     if (forceState && !isPlaying) {
-      startSizzle();
+      startMelodyBGM();
     } else if (!forceState && isPlaying) {
-      stopSizzle();
+      stopMelodyBGM();
     }
     return isPlaying;
   }
 
   if (isPlaying) {
-    stopSizzle();
+    stopMelodyBGM();
   } else {
-    startSizzle();
+    startMelodyBGM();
   }
   return isPlaying;
 };
 
 export const getSizzleState = () => isPlaying;
+export const getMelodyState = () => isPlaying;
 
-const startSizzle = () => {
-  try {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return false;
+const initAudio = () => {
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return null;
 
-    if (!audioCtx) {
-      audioCtx = new AudioContext();
-    }
-
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
-
-    // 1. Continuous White/Pink Noise for Meat Sizzle
-    const bufferSize = audioCtx.sampleRate * 2;
-    const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-    const output = noiseBuffer.getChannelData(0);
-    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
-
-    for (let i = 0; i < bufferSize; i++) {
-      const white = Math.random() * 2 - 1;
-      // Pink noise filter algorithm
-      b0 = 0.99886 * b0 + white * 0.0555179;
-      b1 = 0.99332 * b1 + white * 0.0750759;
-      b2 = 0.96900 * b2 + white * 0.1538520;
-      b3 = 0.86650 * b3 + white * 0.3104856;
-      b4 = 0.55000 * b4 + white * 0.5329522;
-      b5 = -0.7616 * b5 - white * 0.0168980;
-      output[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.08;
-      b6 = white * 0.115926;
-    }
-
-    const whiteNoise = audioCtx.createBufferSource();
-    whiteNoise.buffer = noiseBuffer;
-    whiteNoise.loop = true;
-
-    // Highpass & Bandpass filters for juicy hiss
-    const bandpass = audioCtx.createBiquadFilter();
-    bandpass.type = 'bandpass';
-    bandpass.frequency.value = 3200;
-    bandpass.Q.value = 1.2;
-
-    const highpass = audioCtx.createBiquadFilter();
-    highpass.type = 'highpass';
-    highpass.frequency.value = 1400;
-
-    sizzleGainNode = audioCtx.createGain();
-    sizzleGainNode.gain.setValueAtTime(0.01, audioCtx.currentTime);
-    sizzleGainNode.gain.exponentialRampToValueAtTime(0.18, audioCtx.currentTime + 1.2);
-
-    whiteNoise.connect(highpass);
-    highpass.connect(bandpass);
-    bandpass.connect(sizzleGainNode);
-    sizzleGainNode.connect(audioCtx.destination);
-    whiteNoise.start();
-
-    // 2. Random Pop / Charcoal Crackle generator
-    crackleGainNode = audioCtx.createGain();
-    crackleGainNode.gain.value = 0.3;
-    crackleGainNode.connect(audioCtx.destination);
-
-    crackleInterval = setInterval(() => {
-      if (!isPlaying || !audioCtx) return;
-      playCoalPop(audioCtx, crackleGainNode);
-    }, 180);
-
-    isPlaying = true;
-    return true;
-  } catch (err) {
-    console.warn('Web Audio error:', err);
-    return false;
+  if (!audioCtx) {
+    audioCtx = new AudioContext();
   }
+
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+
+  if (!masterGainNode) {
+    masterGainNode = audioCtx.createGain();
+    masterGainNode.gain.setValueAtTime(0.01, audioCtx.currentTime);
+    masterGainNode.connect(audioCtx.destination);
+  }
+
+  return audioCtx;
 };
 
-const playCoalPop = (ctx, destinationGain) => {
+const playPluck = (ctx, dest, freq, time, duration = 1.2, volume = 0.15, type = 'sine') => {
   try {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     const filter = ctx.createBiquadFilter();
 
-    osc.type = 'triangle';
-    const baseFreq = 80 + Math.random() * 250;
-    osc.frequency.setValueAtTime(baseFreq, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 0.06);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, time);
 
+    // Warm low-pass acoustic tone
     filter.type = 'lowpass';
-    filter.frequency.value = 800 + Math.random() * 1200;
+    filter.frequency.setValueAtTime(freq * 3.5, time);
+    filter.frequency.exponentialRampToValueAtTime(freq * 1.1, time + duration * 0.8);
 
-    const popVol = 0.05 + Math.random() * 0.15;
-    gain.gain.setValueAtTime(popVol, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.05 + Math.random() * 0.04);
+    // Gentle pluck envelope (soft attack, smooth decay)
+    gain.gain.setValueAtTime(0.0001, time);
+    gain.gain.linearRampToValueAtTime(volume, time + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
 
     osc.connect(filter);
     filter.connect(gain);
-    gain.connect(destinationGain);
+    gain.connect(dest);
 
-    osc.start();
-    osc.stop(ctx.currentTime + 0.1);
-  } catch {
-    // Ignore audio pop errors
+    osc.start(time);
+    osc.stop(time + duration);
+  } catch (err) {
+    console.warn("Audio note error:", err);
   }
 };
 
-const stopSizzle = () => {
-  if (sizzleGainNode && audioCtx) {
+const playPadChord = (ctx, dest, chord, time, duration = 3.2) => {
+  try {
+    // Warm Sub Bass
+    const bassOsc = ctx.createOscillator();
+    const bassGain = ctx.createGain();
+    bassOsc.type = 'triangle';
+    bassOsc.frequency.setValueAtTime(chord.bass, time);
+    bassGain.gain.setValueAtTime(0.0001, time);
+    bassGain.gain.linearRampToValueAtTime(0.2, time + 0.5);
+    bassGain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+    bassOsc.connect(bassGain);
+    bassGain.connect(dest);
+    bassOsc.start(time);
+    bassOsc.stop(time + duration);
+
+    // Lush polyphonic notes
+    chord.notes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+
+      osc.type = idx % 2 === 0 ? 'sine' : 'triangle';
+      osc.frequency.setValueAtTime(freq, time);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(1200, time);
+
+      gain.gain.setValueAtTime(0.0001, time);
+      gain.gain.linearRampToValueAtTime(0.05, time + 0.8 + idx * 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(dest);
+
+      osc.start(time);
+      osc.stop(time + duration);
+    });
+  } catch (err) {
+    console.warn("Chord pad error:", err);
+  }
+};
+
+const startMelodyBGM = () => {
+  try {
+    const ctx = initAudio();
+    if (!ctx) return false;
+
+    // Smooth master fade in
+    masterGainNode.gain.cancelScheduledValues(ctx.currentTime);
+    masterGainNode.gain.setValueAtTime(masterGainNode.gain.value, ctx.currentTime);
+    masterGainNode.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 1.2);
+
+    isPlaying = true;
+    currentStep = 0;
+
+    const stepDuration = 750; // ms per 16th note beat
+    const chordDuration = 3.0; // seconds
+
+    const runMelodyLoop = () => {
+      if (!isPlaying || !audioCtx) return;
+
+      const now = audioCtx.currentTime;
+      const chordIndex = Math.floor(currentStep / 4) % CHORD_PROGRESSION.length;
+      const currentChord = CHORD_PROGRESSION[chordIndex];
+
+      // Play chord pad on every bar start
+      if (currentStep % 4 === 0) {
+        playPadChord(audioCtx, masterGainNode, currentChord, now, chordDuration);
+      }
+
+      // Arpeggiated melody note
+      const noteIdx = (currentStep * 2 + (currentStep % 3)) % currentChord.notes.length;
+      const arpFreq = currentChord.notes[noteIdx];
+      playPluck(audioCtx, masterGainNode, arpFreq, now, 0.9, 0.12, 'sine');
+
+      // Lead melody embellishment
+      if (Math.random() > 0.35) {
+        const leadIdx = Math.floor(Math.random() * MELODY_NOTES.length);
+        const leadFreq = MELODY_NOTES[leadIdx];
+        playPluck(audioCtx, masterGainNode, leadFreq, now + 0.25, 1.4, 0.14, 'triangle');
+      }
+
+      currentStep++;
+      sequenceTimer = setTimeout(runMelodyLoop, stepDuration);
+    };
+
+    runMelodyLoop();
+    return true;
+  } catch (err) {
+    console.warn('Melody BGM error:', err);
+    return false;
+  }
+};
+
+const stopMelodyBGM = () => {
+  if (masterGainNode && audioCtx) {
     try {
-      sizzleGainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+      masterGainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+      masterGainNode.gain.setValueAtTime(masterGainNode.gain.value, audioCtx.currentTime);
+      masterGainNode.gain.linearRampToValueAtTime(0.0001, audioCtx.currentTime + 0.8);
+      
       setTimeout(() => {
-        if (audioCtx && audioCtx.state !== 'closed') {
+        if (audioCtx && audioCtx.state !== 'closed' && !isPlaying) {
           audioCtx.suspend();
         }
-      }, 550);
+      }, 900);
     } catch {
       // ignore
     }
   }
-  if (crackleInterval) {
-    clearInterval(crackleInterval);
-    crackleInterval = null;
+  if (sequenceTimer) {
+    clearTimeout(sequenceTimer);
+    sequenceTimer = null;
   }
   isPlaying = false;
 };

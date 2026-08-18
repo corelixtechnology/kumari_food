@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Volume2, VolumeX, Flame, Sparkles, Play, Pause, RefreshCw } from 'lucide-react';
+import { Volume2, VolumeX, Flame, Sparkles, Play, Pause, Music } from 'lucide-react';
 import heroVideo from '../assets/ad6eff89-7596-42cc-873a-b4dbebfc3771.mp4';
-import { toggleBBQSizzle } from '../utils/audio';
+import { toggleMelodyBGM, getMelodyState } from '../utils/audio';
 
 export default function CinematicVideoHero() {
   const videoRef = useRef(null);
@@ -133,13 +133,12 @@ export default function CinematicVideoHero() {
   };
 
   const handleToggleAudio = () => {
-    if (!videoRef.current) return;
-    const newMuted = !isMuted;
-    videoRef.current.muted = newMuted;
-    setIsMuted(newMuted);
-    
-    // Also sync synthesized sizzle audio if desired
-    toggleBBQSizzle();
+    const isNowPlaying = toggleMelodyBGM();
+    setIsMuted(!isNowPlaying);
+
+    if (videoRef.current) {
+      videoRef.current.muted = !isNowPlaying;
+    }
   };
 
   return (
@@ -215,21 +214,26 @@ export default function CinematicVideoHero() {
         
         {/* Playback Controls */}
         <div className="flex items-center gap-2 pointer-events-auto">
-          {/* Sizzle Audio Toggle */}
+          {/* Melody BGM Audio Toggle */}
           <button
             onClick={handleToggleAudio}
             className={`flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all backdrop-blur-md cursor-pointer ${
               !isMuted
-                ? 'bg-gradient-to-r from-red-600 to-orange-500 text-white shadow-[0_0_25px_rgba(255,80,0,0.7)] animate-flame-pulse'
+                ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-[0_0_25px_rgba(255,140,0,0.7)] animate-flame-pulse'
                 : 'bg-black/80 text-zinc-300 hover:text-white border border-white/15 hover:border-orange-500/50'
             }`}
           >
             {!isMuted ? (
-              <Volume2 className="w-4 h-4 text-yellow-300 animate-bounce" />
+              <>
+                <Music className="w-4 h-4 text-yellow-200 animate-bounce" />
+                <span>Melody BGM ON 🎶</span>
+              </>
             ) : (
-              <VolumeX className="w-4 h-4 text-zinc-400" />
+              <>
+                <VolumeX className="w-4 h-4 text-zinc-400" />
+                <span>Play Melody BGM 🎵</span>
+              </>
             )}
-            <span>{!isMuted ? 'Sound ON 🔊' : 'Unmute Sizzle 🔇'}</span>
           </button>
 
           {/* Pause / Play button */}
